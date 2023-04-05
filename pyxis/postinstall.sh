@@ -10,16 +10,23 @@
 # OR CONDITIONS OF ANY KIND, express or implied. See the License for the specific language governing permissions and
 # limitations under the License.
 
+# Usage: ./postinstall.sh [shared_dir]
+# default to /home/[default-user] which is available on all clusters
+. /etc/parallelcluster/cfnconfig
+shared_dir=${1:-/home/$cfn_cluster_user}
+
 set -o pipefail
-# TODO arg for cache and custom conf
+# TODO custom conf
 sudo yum install -y jq squashfs-tools parallel fuse-overlayfs libnvidia-container-tools pigz squashfuse slurm-devel
 wget -O /tmp/enroot.conf https://raw.githubusercontent.com/aws-samples/aws-parallelcluster-post-install-scripts/pyxis/pyxis/enroot.conf
+# set shared directory
+sed -i "s/ENROOT_CACHE_PATH          \/fsx\/enroot/ENROOT_CACHE_PATH          ${shared_dir}\/enroot" /tmp/enroot.conf
 sudo mv /tmp/enroot.conf /etc/enroot/enroot.conf
 sudo chmod 0644 /etc/enroot/enroot.conf
 
 export arch=$(uname -m)
-sudo -E yum install -y https://github.com/NVIDIA/enroot/releases/download/v3.4.0/enroot-3.4.0-2.el7.${arch}.rpm
-sudo -E yum install -y https://github.com/NVIDIA/enroot/releases/download/v3.4.0/enroot+caps-3.4.0-2.el7.${arch}.rpm
+sudo -E yum install -y https://github.com/NVIDIA/enroot/releases/download/v3.4.1/enroot-3.4.1-1.el8.${arch}.rpm
+sudo -E yum install -y https://github.com/NVIDIA/enroot/releases/download/v3.4.1/enroot+caps-3.4.1-1.el8.${arch}.rpm
 
 git clone https://github.com/NVIDIA/pyxis.git /tmp/pyxis
 cd /tmp/pyxis
