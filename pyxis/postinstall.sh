@@ -10,25 +10,25 @@
 # OR CONDITIONS OF ANY KIND, express or implied. See the License for the specific language governing permissions and
 # limitations under the License.
 
-# Usage: ./postinstall.sh [shared_dir]
-shared_dir=$1
+set -o pipefail
+# TODO arg for cache and custom conf
+sudo yum install -y jq squashfs-tools parallel fuse-overlayfs libnvidia-container-tools pigz squashfuse slurm-devel
+wget -O /tmp/enroot.conf https://raw.githubusercontent.com/aws-samples/aws-parallelcluster-post-install-scripts/pyxis/pyxis/enroot.conf
+sudo mv /tmp/enroot.conf /etc/enroot/enroot.conf
+sudo chmod 0644 /etc/enroot/enroot.conf
 
-# install pyxis
+export arch=$(uname -m)
+sudo -E yum install -y https://github.com/NVIDIA/enroot/releases/download/v3.4.0/enroot-3.4.0-2.el7.${arch}.rpm
+sudo -E yum install -y https://github.com/NVIDIA/enroot/releases/download/v3.4.0/enroot+caps-3.4.0-2.el7.${arch}.rpm
+
 git clone https://github.com/NVIDIA/pyxis.git /tmp/pyxis
-sudo yum install -y jq squashfs-tools parallel fuse-overlayfs libnvidia-container-tools pigz squashfuse slurm-devel epel-release
-export arch=$(uname -m) && sudo -E yum install -y https://github.com/NVIDIA/enroot/releases/download/v3.4.1/enroot-3.4.1-1.el8.${arch}.rpm
-export arch=$(uname -m) && sudo -E yum install -y https://github.com/NVIDIA/enroot/releases/download/v3.4.1/enroot+caps-3.4.1-1.el8.${arch}.rpm
 cd /tmp/pyxis
 sudo CPPFLAGS='-I /opt/slurm/include/' make
 sudo CPPFLAGS='-I /opt/slurm/include/' make install
-
-# install enroot
-wget -O /tmp/enroot.conf https://raw.githubusercontent.com/aws-samples/aws-parallelcluster-post-install-scripts/pyxis/pyxis/enroot.conf
-sudo mkdir -p /etc/enroot
-
-# set shared directory
-sed -i "s/ENROOT_CACHE_PATH          \/fsx\/enroot/ENROOT_CACHE_PATH          ${shared_dir}\/enroot" /tmp/enroot.conf
-sudo mv /tmp/enroot.conf /etc/enroot/enroot.conf
 sudo mkdir -p /opt/slurm/etc/plugstack.conf.d
 echo -e 'include /opt/slurm/etc/plugstack.conf.d/*' | sudo tee /opt/slurm/etc/plugstack.conf
 sudo ln -fs /usr/local/share/pyxis/pyxis.conf /opt/slurm/etc/plugstack.conf.d/pyxis.conf
+sudo mkdir -p /run/enroot
+sudo chown ec2-user /run/enroot
+
+sudo systemctl restart slurmd || sudo systemctl restart slurmctld
