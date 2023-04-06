@@ -35,7 +35,7 @@ sudo CPPFLAGS='-I /opt/slurm/include/' make install
 sudo mkdir -p /opt/slurm/etc/plugstack.conf.d
 echo -e 'include /opt/slurm/etc/plugstack.conf.d/*' | sudo tee /opt/slurm/etc/plugstack.conf
 sudo ln -fs /usr/local/share/pyxis/pyxis.conf /opt/slurm/etc/plugstack.conf.d/pyxis.conf
-sudo mkdir -p /run/enroot
-sudo chown ec2-user /run/enroot
 
-sudo systemctl restart slurmd || sudo systemctl restart slurmctld
+for f in /run/user /run/enroot; do sudo mkdir -p ${f} && sudo chown ec2-user ${f}; done
+
+sudo systemctl restart slurmd || sudo systemctl restart slurmctld || exit 0
