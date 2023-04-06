@@ -32,6 +32,7 @@ sudo -E yum install -y https://github.com/NVIDIA/enroot/releases/download/v3.4.1
 
 wget -O /tmp/enroot.template.conf https://raw.githubusercontent.com/aws-samples/aws-parallelcluster-post-install-scripts/${ENROOT_CONFIG_RELEASE}/pyxis/enroot.template.conf
 mkdir -p ${SHARED_DIR}/enroot
+sudo chown ec2-user ${SHARED_DIR}/enroot
 ENROOT_CACHE_PATH=${SHARED_DIR}/enroot envsubst < /tmp/enroot.template.conf > /tmp/enroot.conf
 sudo mv /tmp/enroot.conf /etc/enroot/enroot.conf
 sudo chmod 0644 /etc/enroot/enroot.conf
