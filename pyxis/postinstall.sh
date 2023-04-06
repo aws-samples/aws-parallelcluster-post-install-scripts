@@ -34,10 +34,12 @@ if [ "${OS}" == "Amazon Linux" ]; then
 elif [ "${OS}" == "Ubuntu" ]; then
 	sudo apt update
 	nvidia-smi && distribution=$(. /etc/os-release;echo $ID$VERSION_ID) \
-      && curl -fsSL https://nvidia.github.io/libnvidia-container/gpgkey | sudo gpg --dearmor -o /usr/share/keyrings/nvidia-container-toolkit-keyring.gpg \
-      && curl -s -L https://nvidia.github.io/libnvidia-container/$distribution/libnvidia-container.list | \
-            sed 's#deb https://#deb [signed-by=/usr/share/keyrings/nvidia-container-toolkit-keyring.gpg] https://#g' | \
-            sudo tee /etc/apt/sources.list.d/nvidia-container-toolkit.list
+	      && curl -fsSL https://nvidia.github.io/libnvidia-container/gpgkey | sudo gpg --dearmor -o /usr/share/keyrings/nvidia-container-toolkit-keyring.gpg \
+	      && curl -s -L https://nvidia.github.io/libnvidia-container/$distribution/libnvidia-container.list | \
+		    sed 's#deb https://#deb [signed-by=/usr/share/keyrings/nvidia-container-toolkit-keyring.gpg] https://#g' | \
+		    sudo tee /etc/apt/sources.list.d/nvidia-container-toolkit.list \
+	      && sudo apt install \
+	      && sudo install libnvidia-container-tools -y
 	sudo apt-get install -y jq squashfs-tools parallel fuse-overlayfs pigz squashfuse slurm-devel
 	export arch=$(dpkg --print-architecture)
 	curl -fSsL -O https://github.com/NVIDIA/enroot/releases/download/v3.4.1/enroot_3.4.1-1_${arch}.deb
