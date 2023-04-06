@@ -17,6 +17,8 @@ shared_dir=${1:-/home/$cfn_cluster_user}
 
 set -o pipefail
 
+echo $0
+
 # enroot and pyxis versions should be hardcoded and will change with our release cycle
 
 ENROOT_CONFIG_RELEASE=pyxis # TODO automate
