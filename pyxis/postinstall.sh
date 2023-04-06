@@ -23,6 +23,9 @@ set -o pipefail
 ########
 # enroot and pyxis versions should be hardcoded and will change with our release cycle
 ENROOT_CONFIG_RELEASE=pyxis # TODO automate
+if $(nvidia-smi); then
+    distribution=$(. /etc/os-release;echo $ID$VERSION_ID) && curl -s -L https://nvidia.github.io/libnvidia-container/$distribution/libnvidia-container.repo | sudo tee /etc/yum.repos.d/nvidia-container-toolkit.repo ;
+fi
 
 sudo yum install -y jq squashfs-tools parallel fuse-overlayfs libnvidia-container-tools pigz squashfuse slurm-devel
 
