@@ -38,8 +38,8 @@ elif [ "${OS}" == "Ubuntu" ]; then
 		&& curl -s -L https://nvidia.github.io/libnvidia-container/$distribution/libnvidia-container.list | \
 			sed 's#deb https://#deb [signed-by=/usr/share/keyrings/nvidia-container-toolkit-keyring.gpg] https://#g' | \
 		    sudo tee /etc/apt/sources.list.d/nvidia-container-toolkit.list \
-	    && sudo apt update \
-	    && sudo install libnvidia-container-tools -y
+	    && sudo apt-get update \
+	    && sudo apt-get install libnvidia-container-tools nvidia-container-toolkit -y
 	sudo apt-get install -y jq squashfs-tools parallel fuse-overlayfs pigz squashfuse slurm-devel
 	export arch=$(dpkg --print-architecture)
 	curl -fSsL -O https://github.com/NVIDIA/enroot/releases/download/v3.4.1/enroot_3.4.1-1_${arch}.deb
