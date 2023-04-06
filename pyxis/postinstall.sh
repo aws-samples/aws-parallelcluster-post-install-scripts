@@ -17,24 +17,20 @@ shared_dir=${1:-/home/$cfn_cluster_user}
 
 set -o pipefail
 
-echo "Script name start"
-echo "${0}"
-echo "Script name end"
-
 # enroot and pyxis versions should be hardcoded and will change with our release cycle
-
 ENROOT_CONFIG_RELEASE=pyxis # TODO automate
 
 sudo yum install -y jq squashfs-tools parallel fuse-overlayfs libnvidia-container-tools pigz squashfuse slurm-devel
-wget -O /tmp/enroot.conf https://raw.githubusercontent.com/aws-samples/aws-parallelcluster-post-install-scripts/${ENROOT_CONFIG_RELEASE}/pyxis/enroot.conf
-# set shared directory
-sed -i "s/ENROOT_CACHE_PATH          \/fsx\/enroot/ENROOT_CACHE_PATH          ${shared_dir}\/enroot" /tmp/enroot.conf
-sudo mv /tmp/enroot.conf /etc/enroot/enroot.conf
-sudo chmod 0644 /etc/enroot/enroot.conf
 
 export arch=$(uname -m)
 sudo -E yum install -y https://github.com/NVIDIA/enroot/releases/download/v3.4.1/enroot-3.4.1-1.el8.${arch}.rpm
 sudo -E yum install -y https://github.com/NVIDIA/enroot/releases/download/v3.4.1/enroot+caps-3.4.1-1.el8.${arch}.rpm
+
+wget -O /tmp/enroot.conf https://raw.githubusercontent.com/aws-samples/aws-parallelcluster-post-install-scripts/${ENROOT_CONFIG_RELEASE}/pyxis/enroot.conf
+# set shared directory
+sed -i "s/ENROOT_CACHE_PATH          \/fsx\/enroot/ENROOT_CACHE_PATH          ${shared_dir}\/enroot/g" /tmp/enroot.conf
+sudo mv /tmp/enroot.conf /etc/enroot/enroot.conf
+sudo chmod 0644 /etc/enroot/enroot.conf
 
 git clone --depth 1 --branch v0.15.0 https://github.com/NVIDIA/pyxis.git /tmp/pyxis
 cd /tmp/pyxis
