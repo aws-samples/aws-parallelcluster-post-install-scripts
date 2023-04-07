@@ -8,7 +8,7 @@ The script `postinstall.sh`  will install pyxis and enroot onto an instance. Sha
       Script: https://raw.githubusercontent.com/aws-samples/aws-parallelcluster-post-install-scripts/main/multi-runner/postinstall.sh
       Args:
         - https://raw.githubusercontent.com/aws-samples/aws-parallelcluster-post-install-scripts/main/pyxis/postinstall.sh
-        - /fsx
+        - -/fsx
 ```
 
 # Private docker registry
