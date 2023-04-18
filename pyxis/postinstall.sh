@@ -53,10 +53,14 @@ else
 	echo "Unsupported OS: ${OS}" && exit 1;
 fi
 
-ENROOT_CONFIG_RELEASE=main # TODO automate
+ENROOT_CONFIG_RELEASE=authentication-credentials # TODO automate
 wget -O /tmp/enroot.template.conf https://raw.githubusercontent.com/aws-samples/aws-parallelcluster-post-install-scripts/${ENROOT_CONFIG_RELEASE}/pyxis/enroot.template.conf
 mkdir -p ${SHARED_DIR}/enroot
 chown ${NONROOT_USER} ${SHARED_DIR}/enroot
+
+export ENROOT_CONFIG_PATH=/home/${NONROOT_USER}/enroot
+mkdir ${ENROOT_CONFIG_PATH}
+chown ${NONROOT_USER} ${ENROOT_CONFIG_PATH}
 ENROOT_CACHE_PATH=${SHARED_DIR}/enroot envsubst < /tmp/enroot.template.conf > /tmp/enroot.conf
 mv /tmp/enroot.conf /etc/enroot/enroot.conf
 chmod 0644 /etc/enroot/enroot.conf
