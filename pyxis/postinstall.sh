@@ -89,7 +89,7 @@ ln -fs /usr/local/share/pyxis/pyxis.conf /opt/slurm/etc/plugstack.conf.d/pyxis.c
 
 mkdir ${SHARED_DIR}/pyxis/
 chown ${NONROOT_USER} ${SHARED_DIR}/pyxis/
-sed -i '${s/$/ runtime_path=${SHARED_DIR}/pyxis/}' /opt/slurm/etc/plugstack.conf.d/pyxis.conf
+sed -i '${s/$/ runtime_path=${SHARED_DIR}\/pyxis/}' /opt/slurm/etc/plugstack.conf.d/pyxis.conf
 envsubst < /opt/slurm/etc/plugstack.conf.d/pyxis.conf > /opt/slurm/etc/plugstack.conf.d/pyxis.tmp.conf
 mv /opt/slurm/etc/plugstack.conf.d/pyxis.tmp.conf /opt/slurm/etc/plugstack.conf.d/pyxis.conf
 
