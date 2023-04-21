@@ -89,9 +89,40 @@ ln -fs /usr/local/share/pyxis/pyxis.conf /opt/slurm/etc/plugstack.conf.d/pyxis.c
 
 systemctl restart slurmd || systemctl restart slurmctld
 
-if [ $GPU_PRESENT -eq 0 ]; then
-	if [ $GPU_CONTAINER_PRESENT -eq 0 ]; then
-		systemctl daemon-reload
-		systemctl restart docker
-	fi
+if [ ($GPU_PRESENT -eq 1) && ($GPU_CONTAINER_PRESENT -eq 1) ]; then
+	exit 0;
 fi
+
+# script by @rvencu https://github.com/NVIDIA/pyxis/issues/81#issuecomment-1183587951
+cat << EOF > /tmp/gpu-pyxis.sh
+/sbin/modprobe nvidia
+
+if [ "$?" -eq 0 ]; then
+  # Count the number of NVIDIA controllers found.
+  NVDEVS=`lspci | grep -i NVIDIA`
+  N3D=`echo "$NVDEVS" | grep "3D controller" | wc -l`
+  NVGA=`echo "$NVDEVS" | grep "VGA compatible controller" | wc -l`
+
+  N=`expr $N3D + $NVGA - 1`
+  for i in `seq 0 $N`; do
+    mknod -m 666 /dev/nvidia$i c 195 $i
+  done
+
+  mknod -m 666 /dev/nvidiactl c 195 255
+
+else
+  exit 1
+fi
+
+/sbin/modprobe nvidia-uvm
+
+if [ "$?" -eq 0 ]; then
+  # Find out the major device number used by the nvidia-uvm driver
+  D=`grep nvidia-uvm /proc/devices | awk '{print $1}'`
+
+  mknod -m 666 /dev/nvidia-uvm c $D 0
+else
+  exit 1
+fi
+bash /tmp/gpu-pyxis.sh
+EOF
