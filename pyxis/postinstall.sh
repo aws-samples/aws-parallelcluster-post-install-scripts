@@ -127,3 +127,8 @@ fi
 EOF
 
 bash /tmp/gpu-pyxis.sh
+
+mkdir /${SHARED_DIR}/pyxis/
+chown ${NONROOT_USER} /${SHARED_DIR}/pyxis/
+sed -i '${s/$/ runtime_path=\/fsx\/pyxis/}' /opt/slurm/etc/plugstack.conf.d/pyxis.conf
+systemctl restart slurmd || systemctl restart slurmctld
