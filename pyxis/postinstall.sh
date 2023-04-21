@@ -93,7 +93,7 @@ sed -i '${s/$/ runtime_path=${SHARED_DIR}/pyxis/}' /opt/slurm/etc/plugstack.conf
 envsubst < /opt/slurm/etc/plugstack.conf.d/pyxis.conf > /opt/slurm/etc/plugstack.conf.d/pyxis.tmp.conf
 mv /opt/slurm/etc/plugstack.conf.d/pyxis.tmp.conf /opt/slurm/etc/plugstack.conf.d/pyxis.conf
 
-systemctl restart slurmd || systemctl restart slurmctld
+systemctl restart slurmd || systemctl restart slurmctld || 
 
 
 
@@ -101,8 +101,8 @@ systemctl restart slurmd || systemctl restart slurmctld
 #GPU
 ########
 if [ $GPU_PRESENT -gt 0 ] && [ $GPU_CONTAINER_PRESENT -gt 0 ]; then
-	echo "GPUs not present, exiting"
-	exit 0;
+	echo "GPUs not present, stopping early!"
+	exit 0
 fi
 
 # script by @rvencu https://github.com/NVIDIA/pyxis/issues/81#issuecomment-1183587951
