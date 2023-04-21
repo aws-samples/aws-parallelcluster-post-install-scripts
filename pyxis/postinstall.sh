@@ -36,12 +36,10 @@ else
 fi
 
 if [ "${OS}" == "Amazon Linux" ]; then
-	if [ $GPU_PRESENT -eq 0 ]; then
-		if [ $GPU_CONTAINER_PRESENT -eq 1 ]; then
-			distribution=$(. /etc/os-release;echo $ID$VERSION_ID) \
-				&& curl -s -L https://nvidia.github.io/libnvidia-container/$distribution/libnvidia-container.repo | tee /etc/yum.repos.d/nvidia-container-toolkit.repo \
-				&& yum install libnvidia-container-tools -y
-		fi
+	if [ $GPU_PRESENT -eq 0 ] && [ $GPU_CONTAINER_PRESENT -eq 1 ]; then
+		distribution=$(. /etc/os-release;echo $ID$VERSION_ID) \
+			&& curl -s -L https://nvidia.github.io/libnvidia-container/$distribution/libnvidia-container.repo | tee /etc/yum.repos.d/nvidia-container-toolkit.repo \
+			&& yum update && yum install libnvidia-container-tools -y
 	fi
 	yum install -y jq squashfs-tools parallel fuse-overlayfs pigz squashfuse slurm-devel
 	export arch=$(uname -m)
@@ -50,13 +48,15 @@ if [ "${OS}" == "Amazon Linux" ]; then
   	export NONROOT_USER=ec2-user
 elif [ "${OS}" == "Ubuntu" ]; then
 	apt update
-	nvidia-smi && distribution=$(. /etc/os-release;echo $ID$VERSION_ID) \
-	    && curl -fsSL https://nvidia.github.io/libnvidia-container/gpgkey | gpg --dearmor -o /usr/share/keyrings/nvidia-container-toolkit-keyring.gpg \
-		&& curl -s -L https://nvidia.github.io/libnvidia-container/$distribution/libnvidia-container.list | \
-			sed 's#deb https://#deb [signed-by=/usr/share/keyrings/nvidia-container-toolkit-keyring.gpg] https://#g' | \
-		    tee /etc/apt/sources.list.d/nvidia-container-toolkit.list \
-	    && apt-get update \
-	    && apt-get install libnvidia-container-tools -y
+	if [ $GPU_PRESENT -eq 0 ] && [ $GPU_CONTAINER_PRESENT -eq 1 ]; then
+		distribution=$(. /etc/os-release;echo $ID$VERSION_ID) \
+		    && curl -fsSL https://nvidia.github.io/libnvidia-container/gpgkey | gpg --dearmor -o /usr/share/keyrings/nvidia-container-toolkit-keyring.gpg \
+			&& curl -s -L https://nvidia.github.io/libnvidia-container/$distribution/libnvidia-container.list | \
+				sed 's#deb https://#deb [signed-by=/usr/share/keyrings/nvidia-container-toolkit-keyring.gpg] https://#g' | \
+			    tee /etc/apt/sources.list.d/nvidia-container-toolkit.list \
+		    && apt-get update \
+		    && apt-get install libnvidia-container-tools -y
+	fi
 	apt-get install -y jq squashfs-tools parallel fuse-overlayfs pigz squashfuse slurm-devel
 	export arch=$(dpkg --print-architecture)
 	curl -fSsL -O https://github.com/NVIDIA/enroot/releases/download/v3.4.1/enroot_3.4.1-1_${arch}.deb
@@ -89,12 +89,12 @@ ln -fs /usr/local/share/pyxis/pyxis.conf /opt/slurm/etc/plugstack.conf.d/pyxis.c
 
 systemctl restart slurmd || systemctl restart slurmctld
 
-if [ ($GPU_PRESENT -eq 1) && ($GPU_CONTAINER_PRESENT -eq 1) ]; then
+if [ $GPU_PRESENT -eq 1] && [$GPU_CONTAINER_PRESENT -eq 1]; then
 	exit 0;
 fi
 
 # script by @rvencu https://github.com/NVIDIA/pyxis/issues/81#issuecomment-1183587951
-cat << EOF > /tmp/gpu-pyxis.sh
+cat << 'EOF' > /tmp/gpu-pyxis.sh
 /sbin/modprobe nvidia
 
 if [ "$?" -eq 0 ]; then
@@ -124,5 +124,6 @@ if [ "$?" -eq 0 ]; then
 else
   exit 1
 fi
-bash /tmp/gpu-pyxis.sh
 EOF
+
+bash /tmp/gpu-pyxis.sh
