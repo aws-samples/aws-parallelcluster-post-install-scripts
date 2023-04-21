@@ -98,7 +98,7 @@ systemctl restart slurmd || systemctl restart slurmctld
 ########
 #GPU
 ########
-if [ $GPU_PRESENT -gt 0 ] && [$GPU_CONTAINER_PRESENT -gt 0 ]; then
+if [ $GPU_PRESENT -gt 0 ] && [ $GPU_CONTAINER_PRESENT -gt 0 ]; then
 	echo "GPUs not present, exiting"
 	exit 0;
 fi
