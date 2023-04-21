@@ -26,7 +26,7 @@ OS=$(. /etc/os-release; echo $NAME)
 
 # We do not suport adding driver yet and rely on parallelcluster AMI and DLAMI for nvidia drivers.
 # We would like to investigate using CPU parallelcluster AMI and using Nvidia driver through container, the open question is how to make healthchecks use it.
-nvidia_smi;
+nvidia-smi;
 export GPU_PRESENT=$?
 if [ $GPU_PRESENT -eq 0 ]; then
 	docker run --rm --runtime=nvidia --gpus all nvidia/cuda:11.6.2-base-ubuntu20.04 nvidia-smi
