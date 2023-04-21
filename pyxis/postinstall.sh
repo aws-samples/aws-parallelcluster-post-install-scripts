@@ -36,7 +36,7 @@ else
 fi
 
 if [ "${OS}" == "Amazon Linux" ]; then
-	if [ $GPU_PRESENT -eq 0 ] && [ $GPU_CONTAINER_PRESENT -eq 1 ]; then
+	if [ $GPU_PRESENT -eq 0 ] && [ $GPU_CONTAINER_PRESENT -gt 0 ]; then
 		distribution=$(. /etc/os-release;echo $ID$VERSION_ID) \
 			&& curl -s -L https://nvidia.github.io/libnvidia-container/$distribution/libnvidia-container.repo | tee /etc/yum.repos.d/nvidia-container-toolkit.repo \
 			&& yum update && yum install libnvidia-container-tools -y
@@ -48,7 +48,7 @@ if [ "${OS}" == "Amazon Linux" ]; then
   	export NONROOT_USER=ec2-user
 elif [ "${OS}" == "Ubuntu" ]; then
 	apt update
-	if [ $GPU_PRESENT -eq 0 ] && [ $GPU_CONTAINER_PRESENT -eq 1 ]; then
+	if [ $GPU_PRESENT -eq 0 ] && [ $GPU_CONTAINER_PRESENT -gt 0 ]; then
 		distribution=$(. /etc/os-release;echo $ID$VERSION_ID) \
 		    && curl -fsSL https://nvidia.github.io/libnvidia-container/gpgkey | gpg --dearmor -o /usr/share/keyrings/nvidia-container-toolkit-keyring.gpg \
 			&& curl -s -L https://nvidia.github.io/libnvidia-container/$distribution/libnvidia-container.list | \
@@ -98,7 +98,8 @@ systemctl restart slurmd || systemctl restart slurmctld
 ########
 #GPU
 ########
-if [ $GPU_PRESENT -eq 1] && [$GPU_CONTAINER_PRESENT -eq 1]; then
+if [ $GPU_PRESENT -gt 1] && [$GPU_CONTAINER_PRESENT -gt 1]; then
+	echo "GPUs not present, exiting"
 	exit 0;
 fi
 
