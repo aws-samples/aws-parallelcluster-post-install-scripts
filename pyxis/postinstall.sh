@@ -24,11 +24,25 @@ set -o pipefail
 # enroot and pyxis versions should be hardcoded and will change with our release cycle
 OS=$(. /etc/os-release; echo $NAME)
 
+# We do not suport adding driver yet and rely on parallelcluster AMI and DLAMI for nvidia drivers.
+# We would like to investigate using CPU parallelcluster AMI and using Nvidia driver through container, the open question is how to make healthchecks use it.
+nvidia_smi;
+export GPU_PRESENT=$?
+if [ $GPU_PRESENT -eq 0 ]; then
+	docker run --rm --runtime=nvidia --gpus all nvidia/cuda:11.6.2-base-ubuntu20.04 nvidia-smi
+	export GPU_CONTAINER_PRESENT=$?
+else
+	export GPU_CONTAINER_PRESENT=1
+fi
+
 if [ "${OS}" == "Amazon Linux" ]; then
-	nvidia-smi \
-		&& distribution=$(. /etc/os-release;echo $ID$VERSION_ID) \
-		&& curl -s -L https://nvidia.github.io/libnvidia-container/$distribution/libnvidia-container.repo | tee /etc/yum.repos.d/nvidia-container-toolkit.repo \
-		&& yum install libnvidia-container-tools -y
+	if [ $GPU_PRESENT -eq 0 ]; then
+		if [ $GPU_CONTAINER_PRESENT -eq 1 ]; then
+			distribution=$(. /etc/os-release;echo $ID$VERSION_ID) \
+				&& curl -s -L https://nvidia.github.io/libnvidia-container/$distribution/libnvidia-container.repo | tee /etc/yum.repos.d/nvidia-container-toolkit.repo \
+				&& yum install libnvidia-container-tools -y
+		fi
+	fi
 	yum install -y jq squashfs-tools parallel fuse-overlayfs pigz squashfuse slurm-devel
 	export arch=$(uname -m)
 	yum install -y https://github.com/NVIDIA/enroot/releases/download/v3.4.1/enroot-3.4.1-1.el8.${arch}.rpm
@@ -73,4 +87,11 @@ mkdir -p /opt/slurm/etc/plugstack.conf.d
 echo -e 'include /opt/slurm/etc/plugstack.conf.d/*' | tee /opt/slurm/etc/plugstack.conf
 ln -fs /usr/local/share/pyxis/pyxis.conf /opt/slurm/etc/plugstack.conf.d/pyxis.conf
 
-systemctl restart slurmd || systemctl restart slurmctld || exit 0
+systemctl restart slurmd || systemctl restart slurmctld
+
+if [ $GPU_PRESENT -eq 0 ]; then
+	if [ $GPU_CONTAINER_PRESENT -eq 0 ]; then
+		systemctl daemon-reload
+		systemctl restart docker
+	fi
+fi
