@@ -29,7 +29,7 @@ OS=$(. /etc/os-release; echo $NAME)
 nvidia-smi;
 export GPU_PRESENT=$?
 if [ $GPU_PRESENT -eq 0 ]; then
-	docker run --rm --runtime=nvidia --gpus all nvidia/cuda:11.6.2-base-ubuntu20.04 nvidia-smi
+	nvidia-container-cli info
 	export GPU_CONTAINER_PRESENT=$?
 else
 	export GPU_CONTAINER_PRESENT=1
@@ -38,8 +38,10 @@ fi
 if [ "${OS}" == "Amazon Linux" ]; then
 	if [ $GPU_PRESENT -eq 0 ] && [ $GPU_CONTAINER_PRESENT -gt 0 ]; then
 		distribution=$(. /etc/os-release;echo $ID$VERSION_ID) \
-			&& curl -s -L https://nvidia.github.io/libnvidia-container/$distribution/libnvidia-container.repo | tee /etc/yum.repos.d/nvidia-container-toolkit.repo \
-			&& yum update && yum install libnvidia-container-tools -y
+		&& curl -s -L https://nvidia.github.io/libnvidia-container/$distribution/libnvidia-container.repo | tee /etc/yum.repos.d/nvidia-container-toolkit.repo \
+		&& sudo yum clean expire-cache -y \
+		&& yum update -y \
+		&& yum install libnvidia-container-tools -y
 	fi
 	yum install -y jq squashfs-tools parallel fuse-overlayfs pigz squashfuse slurm-devel
 	export arch=$(uname -m)
@@ -50,12 +52,12 @@ elif [ "${OS}" == "Ubuntu" ]; then
 	apt update
 	if [ $GPU_PRESENT -eq 0 ] && [ $GPU_CONTAINER_PRESENT -gt 0 ]; then
 		distribution=$(. /etc/os-release;echo $ID$VERSION_ID) \
-		    && curl -fsSL https://nvidia.github.io/libnvidia-container/gpgkey | gpg --dearmor -o /usr/share/keyrings/nvidia-container-toolkit-keyring.gpg \
-			&& curl -s -L https://nvidia.github.io/libnvidia-container/$distribution/libnvidia-container.list | \
-				sed 's#deb https://#deb [signed-by=/usr/share/keyrings/nvidia-container-toolkit-keyring.gpg] https://#g' | \
-			    tee /etc/apt/sources.list.d/nvidia-container-toolkit.list \
-		    && apt-get update \
-		    && apt-get install libnvidia-container-tools -y
+	    	&& curl -fsSL https://nvidia.github.io/libnvidia-container/gpgkey | gpg --dearmor -o /usr/share/keyrings/nvidia-container-toolkit-keyring.gpg \
+		&& curl -s -L https://nvidia.github.io/libnvidia-container/$distribution/libnvidia-container.list | \
+		    sed 's#deb https://#deb [signed-by=/usr/share/keyrings/nvidia-container-toolkit-keyring.gpg] https://#g' | \
+		    tee /etc/apt/sources.list.d/nvidia-container-toolkit.list \
+	    	&& apt-get update -y \
+	    	&& apt-get install libnvidia-container-tools -y
 	fi
 	apt-get install -y jq squashfs-tools parallel fuse-overlayfs pigz squashfuse slurm-devel
 	export arch=$(dpkg --print-architecture)
@@ -87,9 +89,11 @@ mkdir -p /opt/slurm/etc/plugstack.conf.d
 echo -e 'include /opt/slurm/etc/plugstack.conf.d/*' | tee /opt/slurm/etc/plugstack.conf
 ln -fs /usr/local/share/pyxis/pyxis.conf /opt/slurm/etc/plugstack.conf.d/pyxis.conf
 
-mkdir /${SHARED_DIR}/pyxis/
-chown ${NONROOT_USER} /${SHARED_DIR}/pyxis/
-sed -i '${s/$/ runtime_path=\/fsx\/pyxis/}' /opt/slurm/etc/plugstack.conf.d/pyxis.conf
+mkdir ${SHARED_DIR}/pyxis/
+chown ${NONROOT_USER} ${SHARED_DIR}/pyxis/
+sed -i '${s/$/ runtime_path=${SHARED_DIR}\/pyxis/}' /opt/slurm/etc/plugstack.conf.d/pyxis.conf
+envsubst < /opt/slurm/etc/plugstack.conf.d/pyxis.conf > /opt/slurm/etc/plugstack.conf.d/pyxis.tmp.conf
+mv /opt/slurm/etc/plugstack.conf.d/pyxis.tmp.conf /opt/slurm/etc/plugstack.conf.d/pyxis.conf
 
 systemctl restart slurmd || systemctl restart slurmctld
 
@@ -99,43 +103,10 @@ systemctl restart slurmd || systemctl restart slurmctld
 #GPU
 ########
 if [ $GPU_PRESENT -gt 0 ] && [ $GPU_CONTAINER_PRESENT -gt 0 ]; then
-	echo "GPUs not present, exiting"
-	exit 0;
+	echo "GPUs not present, stopping early!"
+	exit 0
 fi
 
-# script by @rvencu https://github.com/NVIDIA/pyxis/issues/81#issuecomment-1183587951
-cat << 'EOF' > /tmp/gpu-pyxis.sh
-/sbin/modprobe nvidia
-
-if [ "$?" -eq 0 ]; then
-  # Count the number of NVIDIA controllers found.
-  NVDEVS=`lspci | grep -i NVIDIA`
-  N3D=`echo "$NVDEVS" | grep "3D controller" | wc -l`
-  NVGA=`echo "$NVDEVS" | grep "VGA compatible controller" | wc -l`
-
-  N=`expr $N3D + $NVGA - 1`
-  for i in `seq 0 $N`; do
-    mknod -m 666 /dev/nvidia$i c 195 $i
-  done
-
-  mknod -m 666 /dev/nvidiactl c 195 255
-
-else
-  exit 1
-fi
-
-/sbin/modprobe nvidia-uvm
-
-if [ "$?" -eq 0 ]; then
-  # Find out the major device number used by the nvidia-uvm driver
-  D=`grep nvidia-uvm /proc/devices | awk '{print $1}'`
-
-  mknod -m 666 /dev/nvidia-uvm c $D 0
-else
-  exit 1
-fi
-EOF
-
-bash /tmp/gpu-pyxis.sh
+nvidia-container-cli --load-kmods info
 
 systemctl restart slurmd || systemctl restart slurmctld
