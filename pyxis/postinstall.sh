@@ -29,7 +29,7 @@ OS=$(. /etc/os-release; echo $NAME)
 nvidia-smi;
 export GPU_PRESENT=$?
 if [ $GPU_PRESENT -eq 0 ]; then
-	docker run --rm --runtime=nvidia --gpus all nvidia/cuda:11.6.2-base-ubuntu20.04 nvidia-smi
+	nvidia-container-cli info
 	export GPU_CONTAINER_PRESENT=$?
 else
 	export GPU_CONTAINER_PRESENT=1
@@ -39,7 +39,9 @@ if [ "${OS}" == "Amazon Linux" ]; then
 	if [ $GPU_PRESENT -eq 0 ] && [ $GPU_CONTAINER_PRESENT -gt 0 ]; then
 		distribution=$(. /etc/os-release;echo $ID$VERSION_ID) \
 			&& curl -s -L https://nvidia.github.io/libnvidia-container/$distribution/libnvidia-container.repo | tee /etc/yum.repos.d/nvidia-container-toolkit.repo \
-			&& yum update && yum install libnvidia-container-tools -y
+			&& sudo yum clean expire-cache \
+			&& yum update \
+			&& yum install libnvidia-container-tools -y
 	fi
 	yum install -y jq squashfs-tools parallel fuse-overlayfs pigz squashfuse slurm-devel
 	export arch=$(uname -m)
