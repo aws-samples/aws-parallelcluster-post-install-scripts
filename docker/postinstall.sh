@@ -5,12 +5,10 @@ set -e
 OS=$(. /etc/os-release; echo $NAME)
 
 if [ "${OS}" = "Amazon Linux" ]; then
-    yum update
+    yum -y update
     yum search docker
     yum info docker
-    yum install docker
-    usermod -a -G ec2-user
-    id ec2-user
+    yum -y install docker
     chgrp docker $(which docker)
     chmod g+s $(which docker)
     systemctl enable docker.service
