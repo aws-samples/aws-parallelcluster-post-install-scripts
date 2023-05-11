@@ -1,21 +1,22 @@
-#!/bin/bash
+# !/bin/bash
 set -e
+
 
 OS=$(. /etc/os-release; echo $NAME)
 
-if [ "${OS}" == "Amazon Linux" ]; then
+if [ "${OS}" = "Amazon Linux" ]; then
     yum update
     yum search docker
     yum info docker
     yum install docker
-    usermod -a -G $cfn_cluster_user
-    id $cfn_cluster_user
+    usermod -a -G ec2-user
+    id ec2-user
     newgrp docker
     systemctl enable docker.service
     systemctl start docker.service
-elif [ "${OS}" == "Ubuntu" ]; then
-    apt-get update
-    apt-get install \
+elif [ "${OS}" = "Ubuntu" ]; then
+    apt-get -y update
+    apt-get -y install \
         ca-certificates \
         curl \
         gnupg \
@@ -25,12 +26,15 @@ elif [ "${OS}" == "Ubuntu" ]; then
     echo \
     "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/ubuntu \
     $(lsb_release -cs) stable" | tee /etc/apt/sources.list.d/docker.list > /dev/null
-    apt-get update
-    apt-get install docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
+    apt-get -y update
+    apt-get -y install docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
     groupadd docker
-    usermod -aG docker $cfn_cluster_user
+    usermod -aG docker "ubuntu"
     newgrp docker
+    systemctl enable docker.service
+    systemctl start docker.service
+
 else
-	echo "Unsupported OS: ${OS}" && exit 1;
+        echo "Unsupported OS: ${OS}" && exit 1;
 fi
 
