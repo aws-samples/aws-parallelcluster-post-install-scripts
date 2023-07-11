@@ -1,39 +1,18 @@
-require 'json'
 return if node['cluster']['node_type'] != 'HeadNode'
 
 slurm_etc = '/opt/slurm/etc'
+socket_location = '/var/spool/socket'
 state_save_location = '/var/spool/slurm.state'
-key_location = state_save_location + '/jwt_hs256.key'
-certs_location = '/etc/ssl/certs'
-key_and_crt_name = 'nginx-selfsigned'
+key_location = "#{state_save_location}/jwt_hs256.key"
+token_name = "slurm_token_#{node['cluster']['stack_name']}"
+token_lifespan = 1800
 id = 2005
 
-platform = node['platform']
-if platform == 'amazon'
-  platform = 'amzn2'
-end
-
-# Configure Slurm for JWT authentication and enable slurmrestd
+# Configure Slurm for JWT authentication
 ruby_block 'Create JWT key file' do
   block do
     shell_out!("dd if=/dev/random of=#{key_location} bs=32 count=1")
   end
-end
-
-# TODO: Not idempotent if user is in process 
-group 'slurmrestd' do
-    comment 'slurmrestd group'
-    gid id
-    system true
-end
-
-user 'slurmrestd' do
-  comment 'slurmrestd user'
-  uid id
-  gid id
-  home '/home/slurm'
-  system true
-  shell '/bin/bash'
 end
 
 file key_location do
@@ -48,18 +27,11 @@ directory state_save_location do
   mode '0755'
 end
 
-file '/etc/systemd/system/slurmrestd.service' do
-  owner 'slurmrestd'
-  group 'slurmrestd'
-  mode '0644'
-  content ::File.open('/tmp/slurm_rest_api/slurmrestd.service').read
-end
-
 ruby_block 'Add JWT configuration to slurm.conf' do
   block do
     file = Chef::Util::FileEdit.new("#{slurm_etc}/slurm.conf")
     file.insert_line_after_match(/AuthType=*/, "AuthAltParameters=jwt_key=#{key_location}")
-    file.insert_line_after_match(/AuthType=*/, "AuthAltTypes=auth/jwt")      
+    file.insert_line_after_match(/AuthType=*/, "AuthAltTypes=auth/jwt")
     file.write_file
   end
   not_if "grep -q auth/jwt #{slurm_etc}/slurm.conf"
@@ -75,42 +47,39 @@ ruby_block 'Add JWT configuration to slurmdbd.conf' do
   not_if "grep -q auth/jwt #{slurm_etc}/slurmdbd.conf"
 end
 
-service 'slurmrestd' do
-  action :start
-end
-
 service 'slurmctld' do
   action :restart
 end
 
 ruby_block 'Generate JWT token and create/update AWS secret' do
   block do
-    token_name = "slurm_token_" + node['cluster']['stack_name']
-    region = node['cluster']['region']
 
-    jwt_token = shell_out!("/opt/slurm/bin/scontrol token lifespan=9999999999 \
+    jwt_token = shell_out!("/opt/slurm/bin/scontrol token \
+      lifespan=#{token_lifespan} \
       | grep -oP '^SLURM_JWT\\s*\\=\\s*\\K(.+)'").run_command.stdout
 
-    secret = shell_out!("aws secretsmanager list-secrets \
-      --filter Key=""name"",Values=""#{token_name}"" \
-      --region #{region} \
-      --query ""SecretList""").run_command.stdout
-
-    if JSON.parse(secret).empty?
+    begin
       shell_out!("aws secretsmanager create-secret \
         --name #{token_name} \
-        --region #{region} \
-        --secret-string #{jwt_token}").run_command
-    else
+        --region #{node['cluster']['region']} \
+        --secret-string #{jwt_token}"
+      ).run_command
+    rescue
       shell_out!("aws secretsmanager update-secret \
         --secret-id #{token_name} \
-        --region #{region} \
-        --secret-string #{jwt_token}").run_command
+        --region #{node['cluster']['region']} \
+        --secret-string #{jwt_token}"
+      ).run_command
     end
   end
 end
 
-# NGINX installation
+cron 'rotate JWT token' do
+  minute '*/20'
+  command "/opt/parallelcluster/scripts/rotate_jwt.sh #{token_name} #{node['cluster']['region']} #{token_lifespan}"
+end
+
+# NGINX installation and configuration
 package 'nginx' do
   action :install
 end
@@ -120,23 +89,25 @@ ruby_block 'Generate self-signed key' do
     shell_out!("sudo openssl req -x509 -nodes -days 36500 -newkey rsa:2048 \
       -keyout /etc/ssl/certs/nginx-selfsigned.key \
       -out /etc/ssl/certs/nginx-selfsigned.crt \
-      -subj ""/CN=#{node['cluster']['stack_name']}""").run_command
+      -subj ""/CN=#{node['cluster']['stack_name']}"""
+    ).run_command
   end
 end
 
-template '/etc/yum.repos.d/nginx.repo' do
-  source '/tmp/slurm_rest_api/nginx.repo.erb'
-  owner 'nginx'
-  group 'nginx'
-  mode '0644'
-  variables(
-    os: platform,
-    os_release: node['platform_version']
-  )
-  local true
+group 'nginx' do
+  comment 'nginx group'
+  gid id + 1
+  system true
 end
 
-file 'etc/nginx/nginx.conf' do
+user 'nginx' do
+  comment 'nginx user'
+  uid id + 1
+  gid id + 1
+  system true
+end
+
+file '/etc/nginx/nginx.conf' do
   owner 'nginx'
   group 'nginx'
   mode '0644'
@@ -145,4 +116,54 @@ end
 
 service 'nginx' do
   action :start
+end
+
+# Enable slurmrestd
+# TODO: Not idempotent if user is in process
+group 'slurmrestd' do
+  comment 'slurmrestd group'
+  gid id
+  system true
+end
+
+user 'slurmrestd' do
+comment 'slurmrestd user'
+uid id
+gid id
+system true
+end
+
+directory socket_location do
+  owner 'nginx'
+  group 'nginx'
+  mode '0777'
+end
+
+file '/etc/systemd/system/slurmrestd.service' do
+  owner 'slurmrestd'
+  group 'slurmrestd'
+  mode '0644'
+  content ::File.open('/tmp/slurm_rest_api/slurmrestd.service').read
+end
+
+service 'slurmrestd' do
+  action :start
+end
+
+ruby_block 'Wait for slurmrestd' do
+  block do
+    iter=0
+    until ::File.exists?("#{socket_location}/slurmrestd.sock") || iter > 20 do
+      sleep 1
+      iter += 1
+    end
+    raise "Timeout waiting for slurmrestd startup" unless iter < 20
+  end
+end
+
+ruby_block 'Modify socket permissions' do
+  notifies :start, 'service[slurmrestd]', :before
+  block do
+    shell_out!("chmod 0666 #{socket_location}/slurmrestd.sock").run_command
+  end
 end
