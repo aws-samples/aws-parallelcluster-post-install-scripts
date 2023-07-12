@@ -1,3 +1,24 @@
+# Call the API
+
+## Using curl
+
+To do this, we’ll need a few pieces of information:
+
+- JWT token: If you configured your cluster correctly, the post install script should have create a secret in your AWS SecretsManager under the name slurm_token_$CLUSTER_NAME . Either use the AWS console or the AWS CLI to find your secret based on the cluster name:
+```
+aws secretsmanager get-secret-value --secret-id slurm_token_$CLUSTER_NAME | grep SecretString`
+```
+>**NOTE:** Since the Slurm REST API script is not integrated into ParallelCluster, this secret will not be automatically deleted along with the cluster. You may want to remove it manually on cluster deletion.
+
+- Head node public IP: This can be found in your EC2 dashboard or by using the ParallelCluster CLI:
+```
+pcluster describe-cluster-instances -n $CLUSTER_NAME | grep "publicIp\|nodeType\|{\|}"
+```
+- Cluster user: This depends on your AMI, but it will usually be either `ec2-user`, `ubuntu`, or `centos`.
+
+## Using boto3
+
+```
 #!/usr/bin/env python3
 import argparse
 import boto3
@@ -59,3 +80,7 @@ if args.command == 'cancel-job':
     r = requests.delete(f'{url}/job/{args.job_id}', headers=headers, verify=False)
 
 print(r.text)
+```
+
+With this script you can run commands such as
+`./slurmapi.py -n [cluster_name] ping`
