@@ -24,11 +24,25 @@ set -o pipefail
 # enroot and pyxis versions should be hardcoded and will change with our release cycle
 OS=$(. /etc/os-release; echo $NAME)
 
+# We do not suport adding driver yet and rely on parallelcluster AMI and DLAMI for nvidia drivers.
+# We would like to investigate using CPU parallelcluster AMI and using Nvidia driver through container, the open question is how to make healthchecks use it.
+nvidia-smi;
+export GPU_PRESENT=$?
+if [ $GPU_PRESENT -eq 0 ]; then
+	nvidia-container-cli info
+	export GPU_CONTAINER_PRESENT=$?
+else
+	export GPU_CONTAINER_PRESENT=1
+fi
+
 if [ "${OS}" == "Amazon Linux" ]; then
-	nvidia-smi \
-		&& distribution=$(. /etc/os-release;echo $ID$VERSION_ID) \
+	if [ $GPU_PRESENT -eq 0 ] && [ $GPU_CONTAINER_PRESENT -gt 0 ]; then
+		distribution=$(. /etc/os-release;echo $ID$VERSION_ID) \
 		&& curl -s -L https://nvidia.github.io/libnvidia-container/$distribution/libnvidia-container.repo | tee /etc/yum.repos.d/nvidia-container-toolkit.repo \
+		&& sudo yum clean expire-cache -y \
+		&& yum update -y \
 		&& yum install libnvidia-container-tools -y
+	fi
 	yum install -y jq squashfs-tools parallel fuse-overlayfs pigz squashfuse slurm-devel
 	export arch=$(uname -m)
 	yum install -y https://github.com/NVIDIA/enroot/releases/download/v3.4.1/enroot-3.4.1-1.el8.${arch}.rpm
@@ -36,13 +50,15 @@ if [ "${OS}" == "Amazon Linux" ]; then
   	export NONROOT_USER=ec2-user
 elif [ "${OS}" == "Ubuntu" ]; then
 	apt update
-	nvidia-smi && distribution=$(. /etc/os-release;echo $ID$VERSION_ID) \
-	    && curl -fsSL https://nvidia.github.io/libnvidia-container/gpgkey | gpg --dearmor -o /usr/share/keyrings/nvidia-container-toolkit-keyring.gpg \
+	if [ $GPU_PRESENT -eq 0 ] && [ $GPU_CONTAINER_PRESENT -gt 0 ]; then
+		distribution=$(. /etc/os-release;echo $ID$VERSION_ID) \
+	    	&& curl -fsSL https://nvidia.github.io/libnvidia-container/gpgkey | gpg --dearmor -o /usr/share/keyrings/nvidia-container-toolkit-keyring.gpg \
 		&& curl -s -L https://nvidia.github.io/libnvidia-container/$distribution/libnvidia-container.list | \
-			sed 's#deb https://#deb [signed-by=/usr/share/keyrings/nvidia-container-toolkit-keyring.gpg] https://#g' | \
+		    sed 's#deb https://#deb [signed-by=/usr/share/keyrings/nvidia-container-toolkit-keyring.gpg] https://#g' | \
 		    tee /etc/apt/sources.list.d/nvidia-container-toolkit.list \
-	    && apt-get update \
-	    && apt-get install libnvidia-container-tools -y
+	    	&& apt-get update -y \
+	    	&& apt-get install libnvidia-container-tools -y
+	fi
 	apt-get install -y jq squashfs-tools parallel fuse-overlayfs pigz squashfuse slurm-devel
 	export arch=$(dpkg --print-architecture)
 	curl -fSsL -O https://github.com/NVIDIA/enroot/releases/download/v3.4.1/enroot_3.4.1-1_${arch}.deb
@@ -53,7 +69,7 @@ else
 	echo "Unsupported OS: ${OS}" && exit 1;
 fi
 
-ENROOT_CONFIG_RELEASE=main # TODO automate
+ENROOT_CONFIG_RELEASE=pyxis # TODO automate
 wget -O /tmp/enroot.template.conf https://raw.githubusercontent.com/aws-samples/aws-parallelcluster-post-install-scripts/${ENROOT_CONFIG_RELEASE}/pyxis/enroot.template.conf
 mkdir -p ${SHARED_DIR}/enroot
 chown ${NONROOT_USER} ${SHARED_DIR}/enroot
@@ -73,4 +89,24 @@ mkdir -p /opt/slurm/etc/plugstack.conf.d
 echo -e 'include /opt/slurm/etc/plugstack.conf.d/*' | tee /opt/slurm/etc/plugstack.conf
 ln -fs /usr/local/share/pyxis/pyxis.conf /opt/slurm/etc/plugstack.conf.d/pyxis.conf
 
-systemctl restart slurmd || systemctl restart slurmctld || exit 0
+mkdir ${SHARED_DIR}/pyxis/
+chown ${NONROOT_USER} ${SHARED_DIR}/pyxis/
+sed -i '${s/$/ runtime_path=${SHARED_DIR}\/pyxis/}' /opt/slurm/etc/plugstack.conf.d/pyxis.conf
+envsubst < /opt/slurm/etc/plugstack.conf.d/pyxis.conf > /opt/slurm/etc/plugstack.conf.d/pyxis.tmp.conf
+mv /opt/slurm/etc/plugstack.conf.d/pyxis.tmp.conf /opt/slurm/etc/plugstack.conf.d/pyxis.conf
+
+systemctl restart slurmd || systemctl restart slurmctld
+
+
+
+########
+#GPU
+########
+if [ $GPU_PRESENT -gt 0 ] && [ $GPU_CONTAINER_PRESENT -gt 0 ]; then
+	echo "GPUs not present, stopping early!"
+	exit 0
+fi
+
+nvidia-container-cli --load-kmods info
+
+systemctl restart slurmd || systemctl restart slurmctld
