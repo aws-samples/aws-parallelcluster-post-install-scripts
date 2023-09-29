@@ -1,6 +1,12 @@
 #!/bin/bash
-set -e
 
+set -exo pipefail
+
+echo "
+###################################
+# BEGIN: post-install docker
+###################################
+"
 
 OS=$(. /etc/os-release; echo $NAME)
 
@@ -36,3 +42,8 @@ else
         echo "Unsupported OS: ${OS}" && exit 1;
 fi
 
+echo "
+###################################
+# END: post-install docker
+###################################
+"
