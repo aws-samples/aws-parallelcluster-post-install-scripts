@@ -43,6 +43,9 @@ else
 fi
 
 if [ "${OS}" == "Amazon Linux" ]; then
+	FUSE_OVERLAYFS_URL=http://mirror.centos.org/centos/7/extras/x86_64/Packages/fuse-overlayfs-0.7.2-6.el7_8.x86_64.rpm
+	FUSE_OVERLAYFS_RPM=${FUSE_OVERLAYFS_URL##*/}   # fuse-overlayfs-xxx.rpm
+
 	if [ $GPU_PRESENT -eq 0 ] && [ $GPU_CONTAINER_PRESENT -gt 0 ]; then
 		distribution=$(. /etc/os-release;echo $ID$VERSION_ID) \
 		&& curl -s -L https://nvidia.github.io/libnvidia-container/$distribution/libnvidia-container.repo | tee /etc/yum.repos.d/nvidia-container-toolkit.repo \
@@ -50,19 +53,29 @@ if [ "${OS}" == "Amazon Linux" ]; then
 		&& yum update -y \
 		&& yum install libnvidia-container-tools -y
 	fi
+
+	# alinux2 doesn't have fuse-overlayfs in its repos. So, the question is: which "alinux" this
+	# script was originall written for, to assume that it provides fuse-overlayfs?
 	yum install -y jq squashfs-tools parallel fuse-overlayfs pigz squashfuse zstd
-	[[ $STABLE == 1 ]] && {
+	if [[ ! -e /usr/bin/fuse-overlays ]]; then
+		wget $FUSE_OVERLAYFS_URL
+		yum localinstall -y $FUSE_OVERLAYFS_RPM
+		rm $FUSE_OVERLAYFS_RPM
+	fi
+
+	if [[ $STABLE == 1 ]]; then
 		export arch=$(uname -m)
+		# QUESTION: alinux2 is el7?
 		yum install -y https://github.com/NVIDIA/enroot/releases/download/v${ENROOT_RELEASE}/enroot-${ENROOT_RELEASE}-1.el8.${arch}.rpm
 		yum install -y https://github.com/NVIDIA/enroot/releases/download/v${ENROOT_RELEASE}/enroot+caps-${ENROOT_RELEASE}-1.el8.${arch}.rpm
-	} || {
+	else
 		yum install -y git gcc make libcap libtool automake libmd-devel
 		pushd /opt
 		git clone https://github.com/NVIDIA/enroot.git && cd enroot
 		prefix=/usr sysconfdir=/etc make install	# NOTE: produce lots of log lines (gcc) to CW
 		prefix=/usr sysconfdir=/etc make setcap
 		popd
-	}
+	fi
   	export NONROOT_USER=ec2-user
 elif [ "${OS}" == "Ubuntu" ]; then
 	apt update
@@ -76,19 +89,19 @@ elif [ "${OS}" == "Ubuntu" ]; then
 	    	&& apt-get install libnvidia-container-tools -y
 	fi
 	apt-get install -y jq squashfs-tools parallel fuse-overlayfs pigz squashfuse zstd
-	[[ $STABLE == 1 ]] && {
+	if [[ $STABLE == 1 ]]; then
 		export arch=$(dpkg --print-architecture)
 		curl -fSsL -O https://github.com/NVIDIA/enroot/releases/download/v${ENROOT_VERSION}/enroot_${ENROOT_RELEASE}-1_${arch}.deb
 		curl -fSsL -O https://github.com/NVIDIA/enroot/releases/download/v${ENROOT_VERSION}/enroot+caps_${ENROOT_RELEASE}-1_${arch}.deb # optional
 		apt install -y ./*.deb
-	} || {
+	else
 		apt install -y git gcc make libcap2-bin libtool automake libmd-dev
 		pushd /opt
 		git clone https://github.com/NVIDIA/enroot.git && cd enroot
 		prefix=/usr sysconfdir=/etc make install	# NOTE: produce lots of log lines (gcc) to CW
 		prefix=/usr sysconfdir=/etc make setcap
 		popd
-	}
+	fi
   	export NONROOT_USER=ubuntu
 else
 	echo "Unsupported OS: ${OS}" && exit 1;
@@ -121,7 +134,6 @@ envsubst < /opt/slurm/etc/plugstack.conf.d/pyxis.conf > /opt/slurm/etc/plugstack
 mv /opt/slurm/etc/plugstack.conf.d/pyxis.tmp.conf /opt/slurm/etc/plugstack.conf.d/pyxis.conf
 
 systemctl restart slurmd || systemctl restart slurmctld
-
 
 
 ########
