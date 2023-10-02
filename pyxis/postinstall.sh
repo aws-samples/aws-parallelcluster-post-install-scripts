@@ -23,8 +23,9 @@ echo "
 ###################################
 "
 
-# Temporarily hardcoded.
 STABLE=0
+ENROOT_RELEASE=3.4.1	# For STABLE=1
+
 
 ########
 #ENROOT
@@ -52,8 +53,8 @@ if [ "${OS}" == "Amazon Linux" ]; then
 	yum install -y jq squashfs-tools parallel fuse-overlayfs pigz squashfuse zstd
 	[[ $STABLE == 1 ]] && {
 		export arch=$(uname -m)
-		yum install -y https://github.com/NVIDIA/enroot/releases/download/v3.4.1/enroot-3.4.1-1.el8.${arch}.rpm
-		yum install -y https://github.com/NVIDIA/enroot/releases/download/v3.4.1/enroot+caps-3.4.1-1.el8.${arch}.rpm
+		yum install -y https://github.com/NVIDIA/enroot/releases/download/v${ENROOT_RELEASE}/enroot-${ENROOT_RELEASE}-1.el8.${arch}.rpm
+		yum install -y https://github.com/NVIDIA/enroot/releases/download/v${ENROOT_RELEASE}/enroot+caps-${ENROOT_RELEASE}-1.el8.${arch}.rpm
 	} || {
 		yum install -y git gcc make libcap libtool automake libmd-devel
 		pushd /opt
@@ -77,8 +78,8 @@ elif [ "${OS}" == "Ubuntu" ]; then
 	apt-get install -y jq squashfs-tools parallel fuse-overlayfs pigz squashfuse zstd
 	[[ $STABLE == 1 ]] && {
 		export arch=$(dpkg --print-architecture)
-		curl -fSsL -O https://github.com/NVIDIA/enroot/releases/download/v3.4.1/enroot_3.4.1-1_${arch}.deb
-		curl -fSsL -O https://github.com/NVIDIA/enroot/releases/download/v3.4.1/enroot+caps_3.4.1-1_${arch}.deb # optional
+		curl -fSsL -O https://github.com/NVIDIA/enroot/releases/download/v${ENROOT_VERSION}/enroot_${ENROOT_RELEASE}-1_${arch}.deb
+		curl -fSsL -O https://github.com/NVIDIA/enroot/releases/download/v${ENROOT_VERSION}/enroot+caps_${ENROOT_RELEASE}-1_${arch}.deb # optional
 		apt install -y ./*.deb
 	} || {
 		apt install -y git gcc make libcap2-bin libtool automake libmd-dev
