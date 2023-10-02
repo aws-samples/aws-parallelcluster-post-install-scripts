@@ -23,6 +23,9 @@ echo "
 ###################################
 "
 
+# Temporarily hardcoded.
+STABLE=0
+
 ########
 #ENROOT
 ########
@@ -46,10 +49,19 @@ if [ "${OS}" == "Amazon Linux" ]; then
 		&& yum update -y \
 		&& yum install libnvidia-container-tools -y
 	fi
-	yum install -y jq squashfs-tools parallel fuse-overlayfs pigz squashfuse
-	export arch=$(uname -m)
-	yum install -y https://github.com/NVIDIA/enroot/releases/download/v3.4.1/enroot-3.4.1-1.el8.${arch}.rpm
-	yum install -y https://github.com/NVIDIA/enroot/releases/download/v3.4.1/enroot+caps-3.4.1-1.el8.${arch}.rpm
+	yum install -y jq squashfs-tools parallel fuse-overlayfs pigz squashfuse zstd
+	[[ $STABLE == 1 ]] && {
+		export arch=$(uname -m)
+		yum install -y https://github.com/NVIDIA/enroot/releases/download/v3.4.1/enroot-3.4.1-1.el8.${arch}.rpm
+		yum install -y https://github.com/NVIDIA/enroot/releases/download/v3.4.1/enroot+caps-3.4.1-1.el8.${arch}.rpm
+	} || {
+		yum install -y git gcc make libcap libtool automake libmd-devel
+		pushd /opt
+		git clone https://github.com/NVIDIA/enroot.git && cd enroot
+		prefix=/usr sysconfdir=/etc make install	# NOTE: produce lots of log lines (gcc) to CW
+		prefix=/usr sysconfdir=/etc make setcap
+		popd
+	}
   	export NONROOT_USER=ec2-user
 elif [ "${OS}" == "Ubuntu" ]; then
 	apt update
@@ -62,11 +74,20 @@ elif [ "${OS}" == "Ubuntu" ]; then
 	    	&& apt-get update -y \
 	    	&& apt-get install libnvidia-container-tools -y
 	fi
-	apt-get install -y jq squashfs-tools parallel fuse-overlayfs pigz squashfuse
-	export arch=$(dpkg --print-architecture)
-	curl -fSsL -O https://github.com/NVIDIA/enroot/releases/download/v3.4.1/enroot_3.4.1-1_${arch}.deb
-	curl -fSsL -O https://github.com/NVIDIA/enroot/releases/download/v3.4.1/enroot+caps_3.4.1-1_${arch}.deb # optional
-	apt install -y ./*.deb
+	apt-get install -y jq squashfs-tools parallel fuse-overlayfs pigz squashfuse zstd
+	[[ $STABLE == 1 ]] && {
+		export arch=$(dpkg --print-architecture)
+		curl -fSsL -O https://github.com/NVIDIA/enroot/releases/download/v3.4.1/enroot_3.4.1-1_${arch}.deb
+		curl -fSsL -O https://github.com/NVIDIA/enroot/releases/download/v3.4.1/enroot+caps_3.4.1-1_${arch}.deb # optional
+		apt install -y ./*.deb
+	} || {
+		apt install -y git gcc make libcap2-bin libtool automake libmd-dev
+		pushd /opt
+		git clone https://github.com/NVIDIA/enroot.git && cd enroot
+		prefix=/usr sysconfdir=/etc make install	# NOTE: produce lots of log lines (gcc) to CW
+		prefix=/usr sysconfdir=/etc make setcap
+		popd
+	}
   	export NONROOT_USER=ubuntu
 else
 	echo "Unsupported OS: ${OS}" && exit 1;
