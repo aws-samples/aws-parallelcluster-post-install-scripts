@@ -88,7 +88,7 @@ elif [ "${OS}" == "Ubuntu" ]; then
 	    	&& apt-get update -y \
 	    	&& apt-get install libnvidia-container-tools -y
 	fi
-	apt-get install -y jq squashfs-tools parallel fuse-overlayfs pigz squashfuse zstd
+	apt-get install -y jq squashfs-tools parallel fuse-overlayfs pigz squashfuse zstd libpmix-dev
 	if [[ $STABLE == 1 ]]; then
 		export arch=$(dpkg --print-architecture)
 		curl -fSsL -O https://github.com/NVIDIA/enroot/releases/download/v${ENROOT_VERSION}/enroot_${ENROOT_RELEASE}-1_${arch}.deb
