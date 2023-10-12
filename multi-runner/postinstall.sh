@@ -47,7 +47,8 @@ def main():
 
         os.chmod(tmp.name, 0o777)
         tmp.file.close()
-        subprocess.run([tmp.name, *args], check=True, env=sub_env)
+        # Redirect stderr -> stdout, otherwise doesn't appear on cfn-init (file & cloudwatch)
+        subprocess.run([tmp.name, *args], stderr=subprocess.STDOUT, check=True, env=sub_env)
 
 
 if __name__ == "__main__":
