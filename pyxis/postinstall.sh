@@ -88,11 +88,11 @@ elif [ "${OS}" == "Ubuntu" ]; then
 	    	&& apt-get update -y \
 	    	&& apt-get install libnvidia-container-tools -y
 	fi
-	apt-get install -y jq squashfs-tools parallel fuse-overlayfs pigz squashfuse zstd libpmix-dev
+	apt-get install -y jq squashfs-tools parallel fuse-overlayfs pigz squashfuse zstd
 	if [[ $STABLE == 1 ]]; then
 		export arch=$(dpkg --print-architecture)
-		curl -fSsL -O https://github.com/NVIDIA/enroot/releases/download/v${ENROOT_VERSION}/enroot_${ENROOT_RELEASE}-1_${arch}.deb
-		curl -fSsL -O https://github.com/NVIDIA/enroot/releases/download/v${ENROOT_VERSION}/enroot+caps_${ENROOT_RELEASE}-1_${arch}.deb # optional
+		curl -fSsL -O https://github.com/NVIDIA/enroot/releases/download/v${ENROOT_RELEASE}/enroot_${ENROOT_RELEASE}-1_${arch}.deb
+		curl -fSsL -O https://github.com/NVIDIA/enroot/releases/download/v${ENROOT_RELEASE}/enroot+caps_${ENROOT_RELEASE}-1_${arch}.deb # optional
 		apt install -y ./*.deb
 	else
 		apt install -y git gcc make libcap2-bin libtool automake libmd-dev
@@ -102,6 +102,12 @@ elif [ "${OS}" == "Ubuntu" ]; then
 		prefix=/usr sysconfdir=/etc make setcap
 		popd
 	fi
+	ln -s /usr/share/enroot/hooks.d/50-slurm-pmi.sh /etc/enroot/hooks.d/
+	ln -s /usr/share/enroot/hooks.d/50-slurm-pytorch.sh /etc/enroot/hooks.d/
+
+	# https://github.com/NVIDIA/enroot/issues/136#issuecomment-1241257854
+	mkdir -p /etc/sysconfig
+	echo "PATH=/opt/slurm/sbin:/opt/slurm/bin:$(bash -c 'source /etc/environment ; echo $PATH')" >> /etc/sysconfig/slurmd
   	export NONROOT_USER=ubuntu
 else
 	echo "Unsupported OS: ${OS}" && exit 1;
