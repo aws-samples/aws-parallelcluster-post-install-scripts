@@ -115,6 +115,13 @@ ENROOT_CACHE_PATH=${SHARED_DIR}/enroot envsubst < /tmp/enroot.template.conf > /t
 mv /tmp/enroot.conf /etc/enroot/enroot.conf
 chmod 0644 /etc/enroot/enroot.conf
 
+# Permissions
+mkdir -p /tmp/enroot
+chmod 1777 /tmp/enroot
+mkdir -p /tmp/enroot/data
+chmod 1777 /tmp/enroot/data
+
+chmod 1777 ${SHARED_DIR}/enroot
 
 ########
 #PYXIS
