@@ -1,3 +1,14 @@
+# Setup the REST API
+
+Include the following in your [HeadNode](https://docs.aws.amazon.com/parallelcluster/latest/ug/HeadNode-v3.html) section of the parallelcluster config.
+
+```yaml
+  CustomActions:
+    OnNodeConfigured:
+      Sequence:
+        - Script: https://raw.githubusercontent.com/aws-samples/aws-parallelcluster-post-install-scripts/main/rest-api/postinstall.sh
+```
+
 # Call the API
 
 ## Using curl
