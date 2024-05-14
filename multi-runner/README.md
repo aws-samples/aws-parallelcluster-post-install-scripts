@@ -1,5 +1,8 @@
 # AWS ParallelCluster Multi-Post-Install script
 
+> [!WARNING]
+> This is outdated. Please use the [Sequence](https://docs.aws.amazon.com/parallelcluster/latest/ug/custom-bootstrap-actions-v3.html#custom-bootstrap-actions-config-v3) format (introduced in AWS ParallelCluster 3.6.0) for specifying multiple scripts.
+
 The following script runs other post-install scripts provided as arguments to [OnNodeConfigured](https://docs.aws.amazon.com/parallelcluster/latest/ug/HeadNode-v3.html#yaml-HeadNode-CustomActions-OnNodeConfigured).
 
 ```bash

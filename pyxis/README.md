@@ -2,13 +2,16 @@
 
 The script `postinstall.sh`  will install pyxis and enroot onto an instance. Shared container cache path is set to `ENROOT_CACHE_PATH` which should be ideally located on shared filesystem. It will be set to home directory by default, you can override it by setting first positinal argument to your shared FS path:
 
+Include the following in your [HeadNode](https://docs.aws.amazon.com/parallelcluster/latest/ug/HeadNode-v3.html) and [Scheduling](https://docs.aws.amazon.com/parallelcluster/latest/ug/Scheduling-v3.html) sections of the parallelcluster config.
+
+
 ```yaml
- CustomActions:
+  CustomActions:
     OnNodeConfigured:
-      Script: https://raw.githubusercontent.com/aws-samples/aws-parallelcluster-post-install-scripts/main/multi-runner/postinstall.sh
-      Args:
-        - https://raw.githubusercontent.com/aws-samples/aws-parallelcluster-post-install-scripts/main/pyxis/postinstall.sh
-        - -/fsx
+      Sequence:
+        - Script: https://raw.githubusercontent.com/aws-samples/aws-parallelcluster-post-install-scripts/main/pyxis/postinstall.sh
+          Args:
+            - /fsx
 ```
 
 # Private docker registry

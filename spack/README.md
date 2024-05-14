@@ -1,5 +1,12 @@
 # About Spack Configs for AWS ParallelCluster
 
+```yaml
+  CustomActions:
+    OnNodeConfigured:
+      Sequence:
+        - Script: https://raw.githubusercontent.com/aws-samples/aws-parallelcluster-post-install-scripts/main/spack/postinstall.sh
+```
+
 This directory includes Spack configs for use with [AWS ParallelCluster](https://docs.aws.amazon.com/parallelcluster/index.html), a fully-supported and maintained open-source cluster management tool that enables R&D customers and their IT administrators to operate high-performance computing (HPC) clusters on AWS. AWS ParallelCluster uses infrastructure-as-code to help you automatically and securely provision cloud resources into elastically-scaling HPC clusters capable of running jobs at large scale.
 
 The `postinstall.sh` script included here works with the `CustomActions` feature in AWS ParallelCluster which allows scripts to be run on head node or compute nodes as part of their provisioning lifecycle.
