@@ -23,7 +23,7 @@ echo "
 ###################################
 "
 
-STABLE=0
+STABLE=1
 ENROOT_RELEASE=3.4.1	# For STABLE=1
 
 
