@@ -25,7 +25,7 @@ echo "
 
 STABLE=0
 ENROOT_RELEASE=3.4.1	# For STABLE=1
-
+PYXIS_RELEASE=v0.19.0
 
 ########
 #ENROOT
@@ -132,7 +132,7 @@ chmod 1777 ${SHARED_DIR}/enroot
 ########
 #PYXIS
 ########
-git clone --depth 1 --branch v0.15.0 https://github.com/NVIDIA/pyxis.git /tmp/pyxis
+git clone --depth 1 --branch ${PYXIS_RELEASE} https://github.com/NVIDIA/pyxis.git /tmp/pyxis
 cd /tmp/pyxis
 CPPFLAGS='-I /opt/slurm/include/' make
 CPPFLAGS='-I /opt/slurm/include/' make install
