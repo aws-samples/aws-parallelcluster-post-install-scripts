@@ -7,7 +7,7 @@ AWS_REGION=$3
 
 export DEBIAN_FRONTEND='non-interactive'
 
-apt update && apt-get install -y -qq libnss-ldap libpam-ldap ldap-utils sssd sssd-tools
+apt update && apt-get install -y -qq libnss-ldap libpam-ldap ldap-utils sssd sssd-tools libsss-sudo
 
 
 LDAP_PASSWORD=`aws secretsmanager get-secret-value --secret-id $SECRET_ARN --query SecretString --output text --region $AWS_REGION`
