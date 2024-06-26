@@ -7,8 +7,7 @@ AWS_OFI_NCCL_VERSION=${2:-v1.9.1-aws}
 
 # Install NCCL
 if [ ! -d "/opt/nccl" ]; then
-  git clone --depth=1 https://github.com/NVIDIA/nccl.git /opt/nccl  && cd $_
-  git checkout ${NCCL_VERSION}
+  git clone  --single-branch --branch ${NCCL_VERSION} https://github.com/NVIDIA/nccl.git /opt/nccl
   cd /opt/nccl
   # Explicitly specify platforms since building for all takes ~10 minutes
   # It takes 6 min 7 sec for 70,80,90
