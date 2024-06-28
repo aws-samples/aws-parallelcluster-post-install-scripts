@@ -45,7 +45,9 @@ ruby_block 'Add JWT configuration to slurmdbd.conf' do
     file.write_file
   end
   not_if "grep -q auth/jwt #{slurm_etc}/slurmdbd.conf"
+  only_if { ::File.exist? ("#{slurm_etc}/slurmdbd.conf")}
 end
+
 
 service 'slurmctld' do
   action :restart
