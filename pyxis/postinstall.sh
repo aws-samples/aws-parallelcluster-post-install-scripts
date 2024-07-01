@@ -43,8 +43,6 @@ else
 fi
 
 if [ "${OS}" == "Amazon Linux" ]; then
-	FUSE_OVERLAYFS_URL=http://mirror.centos.org/centos/7/extras/x86_64/Packages/fuse-overlayfs-0.7.2-6.el7_8.x86_64.rpm
-	FUSE_OVERLAYFS_RPM=${FUSE_OVERLAYFS_URL##*/}   # fuse-overlayfs-xxx.rpm
 
 	if [ $GPU_PRESENT -eq 0 ] && [ $GPU_CONTAINER_PRESENT -gt 0 ]; then
 		distribution=$(. /etc/os-release;echo $ID$VERSION_ID) \
