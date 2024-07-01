@@ -54,14 +54,10 @@ if [ "${OS}" == "Amazon Linux" ]; then
 		&& yum install libnvidia-container-tools -y
 	fi
 
-	# alinux2 doesn't have fuse-overlayfs in its repos. So, the question is: which "alinux" this
-	# script was originall written for, to assume that it provides fuse-overlayfs?
+	# fuse-overlayfs is now available from the Extra Packages for Enterprise Linux repo via yum
+ 	amazon-linux-extras install epel
+	yum install -y epel-release	
 	yum install -y jq squashfs-tools parallel fuse-overlayfs pigz squashfuse zstd
-	if [[ ! -e /usr/bin/fuse-overlays ]]; then
-		wget $FUSE_OVERLAYFS_URL
-		yum localinstall -y $FUSE_OVERLAYFS_RPM
-		rm $FUSE_OVERLAYFS_RPM
-	fi
 
 	if [[ $STABLE == 1 ]]; then
 		export arch=$(uname -m)
