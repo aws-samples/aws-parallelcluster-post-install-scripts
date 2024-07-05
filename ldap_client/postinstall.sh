@@ -84,7 +84,8 @@ nss_initgroups_ignoreusers _apt,backup,bin,daemon,ec2-instance-connect,fwupd-ref
 EOF
 
 
-apt-get install -y sssd sssd-tools
+#Change nsswitch.conf for suoder
+grep -qxF 'sudoers:        files sss' /etc/nsswitch.conf || echo 'sudoers:        files sss' >> /etc/nsswitch.conf
 
 cat > /etc/sssd/sssd.conf << EOF
 [sssd]
