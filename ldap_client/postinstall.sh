@@ -83,9 +83,7 @@ pam_password crypt
 nss_initgroups_ignoreusers _apt,backup,bin,daemon,ec2-instance-connect,fwupd-refresh,games,gnats,irc,landscape,list,lp,lxd,mail,man,messagebus,news,pollinate,proxy,root,sshd,sync,sys,syslog,systemd-coredump,systemd-network,systemd-resolve,systemd-timesync,tcpdump,tss,uucp,uuidd,www-data
 EOF
 
-
-#Change nsswitch.conf for suoder
-grep -qxF 'sudoers:        files sss' /etc/nsswitch.conf || echo 'sudoers:        files sss' >> /etc/nsswitch.conf
+apt-get install -y sssd sssd-tools
 
 cat > /etc/sssd/sssd.conf << EOF
 [sssd]
