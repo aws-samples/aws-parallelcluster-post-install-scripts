@@ -1,12 +1,20 @@
-return if node['cluster']['node_type'] != 'HeadNode'
-
 slurm_etc = '/opt/slurm/etc'
+slurm_conf = "#{slurm_etc}/slurm.conf"
+slurmdbd_conf = "#{slurm_etc}/slurmdbd.conf"
 socket_location = '/var/spool/socket'
 state_save_location = '/var/spool/slurm.state'
 key_location = "#{state_save_location}/jwt_hs256.key"
 token_name = "slurm_token_#{node['cluster']['stack_name']}"
 token_lifespan = 1800
 id = 2005
+
+if node['cluster']['node_type'] != 'HeadNode'
+  raise "Slurm REST API post-install script must be run on a HeadNode"
+end
+
+if !::File.exist?(slurmdbd_conf)
+  raise "#{slurmdbd_conf} not found. Slurm accounting may need to be enabled to use the Slurm REST API."
+end
 
 # Configure Slurm for JWT authentication
 ruby_block 'Create JWT key file' do
@@ -29,23 +37,22 @@ end
 
 ruby_block 'Add JWT configuration to slurm.conf' do
   block do
-    file = Chef::Util::FileEdit.new("#{slurm_etc}/slurm.conf")
+    file = Chef::Util::FileEdit.new(slurm_conf)
     file.insert_line_after_match(/AuthType=*/, "AuthAltParameters=jwt_key=#{key_location}")
     file.insert_line_after_match(/AuthType=*/, "AuthAltTypes=auth/jwt")
     file.write_file
   end
-  not_if "grep -q auth/jwt #{slurm_etc}/slurm.conf"
+  not_if "grep -q auth/jwt #{slurm_conf}"
 end
 
 ruby_block 'Add JWT configuration to slurmdbd.conf' do
   block do
-    file = Chef::Util::FileEdit.new("#{slurm_etc}/slurmdbd.conf")
+    file = Chef::Util::FileEdit.new(slurmdbd_conf)
     file.insert_line_after_match(/AuthType=*/, "AuthAltParameters=jwt_key=#{key_location}")
     file.insert_line_after_match(/AuthType=*/, "AuthAltTypes=auth/jwt")
     file.write_file
   end
-  not_if "grep -q auth/jwt #{slurm_etc}/slurmdbd.conf"
-  only_if { ::File.exist? ("#{slurm_etc}/slurmdbd.conf")}
+  not_if "grep -q auth/jwt #{slurmdbd_conf}"
 end
 
 service 'slurmctld' do
@@ -69,6 +76,7 @@ ruby_block 'Generate JWT token and create/update AWS secret' do
         --region #{node['cluster']['region']} \
         --secret-string #{jwt_token}"
       ).run_command
+      Chef::Log.warn("Created secret #{token_name}. This must be deleted manually on cluster deletion.")
     rescue
       shell_out!("aws secretsmanager update-secret \
         --secret-id #{token_name} \
