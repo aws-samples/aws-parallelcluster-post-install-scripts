@@ -153,7 +153,8 @@ fi
 
 nvidia-container-cli --load-kmods info || true
 
-systemctl restart slurmd || systemctl restart slurmctld
+systemctl is-active --quiet slurmctld && systemctl restart slurmctld || echo "This instance does not run slurmctld"
+systemctl is-active --quiet slurmd    && systemctl restart slurmd    || echo "This instance does not run slurmd"
 
 echo "
 ###################################
