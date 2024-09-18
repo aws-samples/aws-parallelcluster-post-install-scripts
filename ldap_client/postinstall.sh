@@ -99,7 +99,6 @@ sudo_provider = ldap
 ldap_uri = ldap://$LDAP_SERVER_IP
 cache_credentials = False
 ldap_search_base = dc=example,dc=com
-account_cache_expiration = 1
 entry_cache_timeout = 600
 EOF
 
