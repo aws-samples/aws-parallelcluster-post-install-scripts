@@ -83,12 +83,14 @@ pam_password crypt
 nss_initgroups_ignoreusers _apt,backup,bin,daemon,ec2-instance-connect,fwupd-refresh,games,gnats,irc,landscape,list,lp,lxd,mail,man,messagebus,news,pollinate,proxy,root,sshd,sync,sys,syslog,systemd-coredump,systemd-network,systemd-resolve,systemd-timesync,tcpdump,tss,uucp,uuidd,www-data
 EOF
 
-apt-get install -y sssd sssd-tools
+#Change nsswitch.conf for suoder
+grep -qxF 'sudoers:        files sss' /etc/nsswitch.conf || echo 'sudoers:        files sss' >> /etc/nsswitch.conf
 
 cat > /etc/sssd/sssd.conf << EOF
 [sssd]
 config_file_version = 2
 domains = example.com
+services = nss,pam,sudo,ssh
 
 [domain/example.com]
 id_provider = ldap
@@ -97,6 +99,8 @@ sudo_provider = ldap
 ldap_uri = ldap://$LDAP_SERVER_IP
 cache_credentials = False
 ldap_search_base = dc=example,dc=com
+account_cache_expiration = 1
+entry_cache_timeout = 600
 EOF
 
 chmod 600 /etc/sssd/sssd.conf
