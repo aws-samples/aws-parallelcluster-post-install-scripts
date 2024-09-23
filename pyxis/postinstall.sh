@@ -140,8 +140,6 @@ sed -i '${s/$/ runtime_path=${SHARED_DIR}\/pyxis/}' /opt/slurm/etc/plugstack.con
 SHARED_DIR=${SHARED_DIR} envsubst < /opt/slurm/etc/plugstack.conf.d/pyxis.conf > /opt/slurm/etc/plugstack.conf.d/pyxis.tmp.conf
 mv /opt/slurm/etc/plugstack.conf.d/pyxis.tmp.conf /opt/slurm/etc/plugstack.conf.d/pyxis.conf
 
-systemctl restart slurmd || systemctl restart slurmctld
-
 
 ########
 #GPU
