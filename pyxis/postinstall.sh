@@ -96,18 +96,21 @@ elif [ "${OS}" == "Ubuntu" ]; then
 		prefix=/usr sysconfdir=/etc make setcap
 		popd
 	fi
-	ln -s /usr/share/enroot/hooks.d/50-slurm-pmi.sh /etc/enroot/hooks.d/
-	ln -s /usr/share/enroot/hooks.d/50-slurm-pytorch.sh /etc/enroot/hooks.d/
-
-	# https://github.com/NVIDIA/enroot/issues/136#issuecomment-1241257854
-	mkdir -p /etc/sysconfig
-	echo "PATH=/opt/slurm/sbin:/opt/slurm/bin:$(bash -c 'source /etc/environment ; echo $PATH')" >> /etc/sysconfig/slurmd
   	export NONROOT_USER=ubuntu
 else
 	echo "Unsupported OS: ${OS}" && exit 1;
 fi
 
-ENROOT_CONFIG_RELEASE=pyxis # TODO automate
+ln -s /usr/share/enroot/hooks.d/50-slurm-pmi.sh /etc/enroot/hooks.d/
+ln -s /usr/share/enroot/hooks.d/50-slurm-pytorch.sh /etc/enroot/hooks.d/
+
+# https://github.com/NVIDIA/enroot/issues/136#issuecomment-1241257854
+mkdir -p /etc/sysconfig
+wget -O /etc/chef/cookbooks/aws-parallelcluster-slurm/templates/default/compute_node_finalize/slurm/slurm.sysconfig.erb https://raw.githubusercontent.com/aws/aws-parallelcluster-cookbook/refs/heads/develop/cookbooks/aws-parallelcluster-slurm/templates/default/compute_node_finalize/slurm/slurm.sysconfig.erb
+echo "PATH=/opt/slurm/sbin:/opt/slurm/bin:$(bash -c 'source /etc/environment ; echo $PATH')" >> /etc/chef/cookbooks/aws-parallelcluster-slurm/templates/default/compute_node_finalize/slurm/slurm.sysconfig.erb
+
+
+ENROOT_CONFIG_RELEASE=main # TODO automate
 wget -O /tmp/enroot.template.conf https://raw.githubusercontent.com/aws-samples/aws-parallelcluster-post-install-scripts/${ENROOT_CONFIG_RELEASE}/pyxis/enroot.template.conf
 mkdir -p ${SHARED_DIR}/enroot
 chown ${NONROOT_USER} ${SHARED_DIR}/enroot
