@@ -44,7 +44,7 @@ then
 		sudo mkdir -p $ENROOT_DIR/data
 		sudo mkdir -p $ENROOT_DIR/cache
 		sudo chmod -R 1777 $ENROOT_DIR
-		sudo mv /opt/parallelcluster/examples/enroot/enroot.conf /etc/enroot/enroot.conf
+		sudo cp /opt/parallelcluster/examples/enroot/enroot.conf /etc/enroot/enroot.conf
 		sudo chmod 0644 /etc/enroot/enroot.conf
 
 		sudo sed -i "s%ENROOT_CONFIG_PATH          /var/enroot/config/user-\$(id -u)%ENROOT_CONFIG_PATH          /home/\$(id -u -n)/.config/enroot%g" /etc/enroot/enroot.conf
@@ -59,8 +59,8 @@ then
 		sudo chmod 1777 $PYXIS_RUNTIME_DIR
 
 		sudo mkdir -p /opt/slurm/etc/plugstack.conf.d/
-		sudo mv /opt/parallelcluster/examples/spank/plugstack.conf /opt/slurm/etc/
-		sudo mv /opt/parallelcluster/examples/pyxis/pyxis.conf /opt/slurm/etc/plugstack.conf.d/
+		sudo cp /opt/parallelcluster/examples/spank/plugstack.conf /opt/slurm/etc/
+		sudo cp /opt/parallelcluster/examples/pyxis/pyxis.conf /opt/slurm/etc/plugstack.conf.d/
 		sudo -i scontrol reconfigure  
 
 	fi
@@ -77,7 +77,7 @@ then
 		sudo mkdir -p $ENROOT_DIR/data
 		sudo mkdir -p $ENROOT_DIR/cache
 		sudo chmod -R 1777 $ENROOT_DIR
-		sudo mv /opt/parallelcluster/examples/enroot/enroot.conf /etc/enroot/enroot.conf
+		sudo cp /opt/parallelcluster/examples/enroot/enroot.conf /etc/enroot/enroot.conf
 		sudo chmod 0644 /etc/enroot/enroot.conf
 
 		sudo sed -i "s%ENROOT_CONFIG_PATH          /var/enroot/config/user-\$(id -u)%ENROOT_CONFIG_PATH          /home/\$(id -u -n)/.config/enroot%g" /etc/enroot/enroot.conf
