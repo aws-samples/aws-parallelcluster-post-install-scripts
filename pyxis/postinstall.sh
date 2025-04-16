@@ -47,10 +47,10 @@ then
 		sudo cp /opt/parallelcluster/examples/enroot/enroot.conf /etc/enroot/enroot.conf
 		sudo chmod 0644 /etc/enroot/enroot.conf
 
-		sudo sed -i "s%ENROOT_CONFIG_PATH          /var/enroot/config/user-\$(id -u)%ENROOT_CONFIG_PATH          /home/\$(id -u -n)/.config/enroot%g" /etc/enroot/enroot.conf
-		sudo sed -i "s%ENROOT_RUNTIME_PATH         /run/enroot/runtime/user-\$(id -u)%ENROOT_RUNTIME_PATH         $ENROOT_DIR/user-\$(id -u)%g" /etc/enroot/enroot.conf
-		sudo sed -i "s%ENROOT_DATA_PATH            /run/enroot/data/user-\$(id -u)%ENROOT_DATA_PATH            $ENROOT_DIR/data/user-\$(id -u)%g" /etc/enroot/enroot.conf
-		sudo sed -i "s%ENROOT_CACHE_PATH           /var/enroot/cache/group-\$(id -g)%ENROOT_CACHE_PATH           $ENROOT_DIR/cache/user-\$(id -u)%g" /etc/enroot/enroot.conf
+		sudo sed -i "s%^ENROOT_CONFIG_PATH.*%ENROOT_CONFIG_PATH          /home/\$(id -u -n)/.config/enroot%g" /etc/enroot/enroot.conf
+		sudo sed -i "s%^ENROOT_RUNTIME_PATH.*%ENROOT_RUNTIME_PATH         $ENROOT_DIR/user-\$(id -u)%g" /etc/enroot/enroot.conf
+		sudo sed -i "s%^ENROOT_DATA_PATH.*%ENROOT_DATA_PATH            $ENROOT_DIR/data/user-\$(id -u)%g" /etc/enroot/enroot.conf
+		sudo sed -i "s%^ENROOT_CACHE_PATH.*%ENROOT_CACHE_PATH           $ENROOT_DIR/cache/user-\$(id -u)%g" /etc/enroot/enroot.conf
 
 		# Configure Pyxis
 		PYXIS_RUNTIME_DIR="/run/pyxis"
@@ -80,10 +80,10 @@ then
 		sudo cp /opt/parallelcluster/examples/enroot/enroot.conf /etc/enroot/enroot.conf
 		sudo chmod 0644 /etc/enroot/enroot.conf
 
-		sudo sed -i "s%ENROOT_CONFIG_PATH          /var/enroot/config/user-\$(id -u)%ENROOT_CONFIG_PATH          /home/\$(id -u -n)/.config/enroot%g" /etc/enroot/enroot.conf
-		sudo sed -i "s%ENROOT_RUNTIME_PATH         /run/enroot/runtime/user-\$(id -u)%ENROOT_RUNTIME_PATH         $ENROOT_DIR/user-\$(id -u)%g" /etc/enroot/enroot.conf
-		sudo sed -i "s%ENROOT_DATA_PATH            /run/enroot/data/user-\$(id -u)%ENROOT_DATA_PATH            $ENROOT_DIR/data/user-\$(id -u)%g" /etc/enroot/enroot.conf
-		sudo sed -i "s%ENROOT_CACHE_PATH           /var/enroot/cache/group-\$(id -g)%ENROOT_CACHE_PATH           $ENROOT_DIR/cache/user-\$(id -u)%g" /etc/enroot/enroot.conf
+		sudo sed -i "s%^ENROOT_CONFIG_PATH.*%ENROOT_CONFIG_PATH          /home/\$(id -u -n)/.config/enroot%g" /etc/enroot/enroot.conf
+		sudo sed -i "s%^ENROOT_RUNTIME_PATH.*%ENROOT_RUNTIME_PATH         $ENROOT_DIR/user-\$(id -u)%g" /etc/enroot/enroot.conf
+		sudo sed -i "s%^ENROOT_DATA_PATH.*%ENROOT_DATA_PATH            $ENROOT_DIR/data/user-\$(id -u)%g" /etc/enroot/enroot.conf
+		sudo sed -i "s%^ENROOT_CACHE_PATH.*%ENROOT_CACHE_PATH           $ENROOT_DIR/cache/user-\$(id -u)%g" /etc/enroot/enroot.conf
 
 		# Configure Pyxis
 		PYXIS_RUNTIME_DIR="/run/pyxis"
