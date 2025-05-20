@@ -68,7 +68,7 @@ elif [ "${OS}" = "Ubuntu" ]; then
     tee /etc/apt/sources.list.d/nvidia-container-toolkit.list
 
     apt-get -y update
-    apt-get install -y nvidia-container-toolkit
+    apt-get install -y nvidia-container-toolkit=1.17.6-1 nvidia-container-toolkit-base=1.17.6-1
 
 else
         echo "Unsupported OS: ${OS}" && exit 1;
