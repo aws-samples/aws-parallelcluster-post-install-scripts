@@ -94,6 +94,15 @@ then
 		wget -O /etc/chef/cookbooks/aws-parallelcluster-slurm/templates/default/compute_node_finalize/slurm/slurm.sysconfig.erb https://raw.githubusercontent.com/aws/aws-parallelcluster-cookbook/refs/heads/develop/cookbooks/aws-parallelcluster-slurm/templates/default/compute_node_finalize/slurm/slurm.sysconfig.erb
 		echo "PATH=/opt/slurm/sbin:/opt/slurm/bin:$(bash -c 'source /etc/environment ; echo $PATH')" >> /etc/chef/cookbooks/aws-parallelcluster-slurm/templates/default/compute_node_finalize/slurm/slurm.sysconfig.erb
 
+		# In Ubuntu24.04 Apparmor blocks the creation of unprivileged user namespaces,
+		# which is required by Enroot. So to run Enroot, it is required to disable this restriction.
+		# See https://ubuntu.com/blog/ubuntu-23-10-restricted-unprivileged-user-namespaces
+		source /etc/os-release
+		if [ "${ID}${VERSION_ID}" == "ubuntu24.04" ]; then
+		    echo "kernel.apparmor_restrict_unprivileged_userns = 0" | sudo tee /etc/sysctl.d/99-pcluster-disable-apparmor-restrict-unprivileged-userns.conf
+		    sudo sysctl --system
+		fi 
+
 		systemctl is-active --quiet slurmd    && systemctl restart slurmd    || echo "This instance does not run slurmd"
 
 	fi
