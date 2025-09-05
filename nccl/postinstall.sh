@@ -16,7 +16,7 @@ fi
 
 # Install nccl-tests
 if [ ! -d "/opt/nccl-tests" ]; then
-  git clone --depth=1 --branch v2.13.9 https://github.com/NVIDIA/nccl-tests.git /opt/nccl-tests
+  git clone --depth=1 --branch v2.16.9 https://github.com/NVIDIA/nccl-tests.git /opt/nccl-tests
   cd /opt/nccl-tests
   export LD_LIBRARY_PATH=/opt/amazon/efa/lib:$LD_LIBRARY_PATH
   make -j $(nproc) MPI=1 MPI_HOME=/opt/amazon/openmpi NCCL_HOME=/opt/nccl/build CUDA_HOME=/usr/local/cuda
