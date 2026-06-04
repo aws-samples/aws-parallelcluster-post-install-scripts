@@ -10,9 +10,25 @@ if [ ! -d "/opt/nccl" ]; then
   git clone  --single-branch --branch ${NCCL_VERSION} https://github.com/NVIDIA/nccl.git /opt/nccl
   cd /opt/nccl
   # Explicitly specify platforms since building for all takes ~10 minutes.
-  # Covers V100 (sm_70), A100 (sm_80), H100 (sm_90), B200 (sm_100).
-  # The compute_100 PTX provides forward-compat for future Blackwell variants.
-  make -j src.build NVCC_GENCODE="-gencode=arch=compute_70,code=sm_70 -gencode=arch=compute_80,code=sm_80 -gencode=arch=compute_90,code=sm_90 -gencode=arch=compute_100,code=sm_100 -gencode=arch=compute_100,code=compute_100"
+  # Pick GENCODE based on the available CUDA toolkit:
+  #   - CUDA >= 13 dropped sm_70 (V100); cover Ampere/Hopper/Blackwell.
+  #   - CUDA <  13 still supports sm_70; keep V100 in the matrix.
+  # In both cases, sm_100 (B200/Blackwell) is required to avoid
+  # 'Cuda failure: named symbol not found' on p6-b200 instances.
+  CUDA_MAJOR=$(/usr/local/cuda/bin/nvcc --version | grep -oP 'release \K[0-9]+' | head -1)
+  if [ "${CUDA_MAJOR:-0}" -ge 13 ]; then
+    NCCL_GENCODE="-gencode=arch=compute_80,code=sm_80 \
+                  -gencode=arch=compute_90,code=sm_90 \
+                  -gencode=arch=compute_100,code=sm_100 \
+                  -gencode=arch=compute_120,code=compute_120"
+  else
+    NCCL_GENCODE="-gencode=arch=compute_70,code=sm_70 \
+                  -gencode=arch=compute_80,code=sm_80 \
+                  -gencode=arch=compute_90,code=sm_90 \
+                  -gencode=arch=compute_100,code=sm_100 \
+                  -gencode=arch=compute_100,code=compute_100"
+  fi
+  make -j src.build NVCC_GENCODE="${NCCL_GENCODE}"
 fi
 
 # Install nccl-tests
