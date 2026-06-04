@@ -9,9 +9,10 @@ AWS_OFI_NCCL_VERSION=${2:-v1.9.1-aws}
 if [ ! -d "/opt/nccl" ]; then
   git clone  --single-branch --branch ${NCCL_VERSION} https://github.com/NVIDIA/nccl.git /opt/nccl
   cd /opt/nccl
-  # Explicitly specify platforms since building for all takes ~10 minutes
-  # It takes 6 min 7 sec for 70,80,90
-  make -j src.build NVCC_GENCODE="-gencode=arch=compute_70,code=sm_70 -gencode=arch=compute_80,code=sm_80 -gencode=arch=compute_90,code=sm_90"
+  # Explicitly specify platforms since building for all takes ~10 minutes.
+  # Covers V100 (sm_70), A100 (sm_80), H100 (sm_90), B200 (sm_100).
+  # The compute_100 PTX provides forward-compat for future Blackwell variants.
+  make -j src.build NVCC_GENCODE="-gencode=arch=compute_70,code=sm_70 -gencode=arch=compute_80,code=sm_80 -gencode=arch=compute_90,code=sm_90 -gencode=arch=compute_100,code=sm_100 -gencode=arch=compute_100,code=compute_100"
 fi
 
 # Install nccl-tests
