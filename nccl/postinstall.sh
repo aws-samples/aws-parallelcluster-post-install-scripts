@@ -2,8 +2,8 @@
 
 set -exo pipefail
 
-NCCL_VERSION=${1:-v2.21.5-1}
-AWS_OFI_NCCL_VERSION=${2:-v1.9.1-aws}
+
+NCCL_VERSION=${1:-v2.26.2-1} #compatible with OFI-NCCL v 1.14.2 preinstalled on pcluster AMI https://github.com/aws/aws-ofi-nccl/releases/tag/v1.14.2
 
 # Install NCCL
 if [ ! -d "/opt/nccl" ]; then
@@ -37,18 +37,4 @@ if [ ! -d "/opt/nccl-tests" ]; then
   cd /opt/nccl-tests
   export LD_LIBRARY_PATH=/opt/amazon/efa/lib:$LD_LIBRARY_PATH
   make -j $(nproc) MPI=1 MPI_HOME=/opt/amazon/openmpi NCCL_HOME=/opt/nccl/build CUDA_HOME=/usr/local/cuda
-fi
-
-# Install AWS OFI NCCL
-if [ ! -d "/opt/aws-ofi-nccl" ]; then
-  git clone -b ${AWS_OFI_NCCL_VERSION} --depth=1 https://github.com/aws/aws-ofi-nccl.git /opt/aws-ofi-nccl
-  cd /opt/aws-ofi-nccl
-  ./autogen.sh
-  ./configure --enable-platform-aws \
-            --with-libfabric=/opt/amazon/efa \
-            --with-mpi=/opt/amazon/openmpi \
-            --with-cuda=/usr/local/cuda \
-            --prefix=/opt/aws-ofi-nccl
-  make -j $(nproc)
-  make install
 fi
